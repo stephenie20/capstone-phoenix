@@ -1,0 +1,50 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taskapp
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/ts-a-devops/capstone-phoenix   # <- your fork URL
+    targetRevision: HEAD
+    path: manifests/overlays/production
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taskapp
+
+  syncPolicy:
+    automated:
+      prune: true       # remove resources deleted from git
+      selfHeal: true    # revert manual kubectl changes automatically
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - RespectIgnoreDifferences=true
+
+  # Tell Argo to ignore secrets created out-of-band (postgres-secret, backend-secret)
+  # so it doesn't try to prune them (they're not in git)
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: postgres-secret
+      namespace: taskapp
+      jsonPointers:
+        - /data
+    - group: ""
+      kind: Secret
+      name: backend-secret
+      namespace: taskapp
+      jsonPointers:
+        - /data
+    - group: ""
+      kind: Secret
+      name: letsencrypt-prod-key
+      namespace: taskapp
+      jsonPointers:
+        - /data

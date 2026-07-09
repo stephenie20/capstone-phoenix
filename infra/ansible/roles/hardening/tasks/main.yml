@@ -1,0 +1,126 @@
+---
+# infra/ansible/roles/hardening/tasks/main.yml
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - ufw
+      - fail2ban
+      - curl
+      - unzip
+      - gnupg
+      - ca-certificates
+    state: present
+
+# ── SSH hardening ─────────────────────────────────────────────────────────────
+
+- name: Disable root SSH login
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin no'
+    state: present
+  notify: restart sshd
+
+- name: Disable password authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+    state: present
+  notify: restart sshd
+
+- name: Disable challenge-response auth
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?ChallengeResponseAuthentication'
+    line: 'ChallengeResponseAuthentication no'
+    state: present
+  notify: restart sshd
+
+# ── Firewall (ufw) ────────────────────────────────────────────────────────────
+
+- name: Set ufw default incoming policy to deny
+  community.general.ufw:
+    default: deny
+    direction: incoming
+
+- name: Set ufw default outgoing policy to allow
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+- name: Allow world-accessible ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ ufw_allowed_ports }}"
+
+- name: Allow intra-cluster ports (k3s API, flannel, kubelet)
+  community.general.ufw:
+    rule: allow
+    src: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+  loop: "{{ groups['k3s_cluster'] }}"
+  when: hostvars[item]['ansible_default_ipv4'] is defined
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
+
+# ── fail2ban ──────────────────────────────────────────────────────────────────
+
+- name: Configure fail2ban SSH jail
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/sshd.conf
+    content: |
+      [sshd]
+      enabled  = true
+      port     = {{ ssh_port }}
+      maxretry = 5
+      bantime  = 3600
+      findtime = 600
+    mode: "0644"
+  notify: restart fail2ban
+  when: fail2ban_enabled
+
+- name: Enable and start fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+  when: fail2ban_enabled
+
+# ── Kernel tweaks for k3s ─────────────────────────────────────────────────────
+
+- name: Load required kernel modules
+  ansible.builtin.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - br_netfilter
+    - overlay
+
+- name: Persist kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k3s.conf
+    content: |
+      br_netfilter
+      overlay
+    mode: "0644"
+
+- name: Set sysctl parameters for k3s networking
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-k3s.conf
+    reload: true
+  loop:
+    - { key: "net.bridge.bridge-nf-call-iptables",  value: "1" }
+    - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+    - { key: "net.ipv4.ip_forward",                 value: "1" }

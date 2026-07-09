@@ -1,0 +1,92 @@
+---
+# manifests/observability/taskapp-dashboard.yaml
+# Apply with: kubectl apply -f manifests/observability/taskapp-dashboard.yaml
+# Grafana sidecar picks it up automatically within ~30s.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskapp-grafana-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  taskapp.json: |
+    {
+      "title": "TaskApp — Phoenix Capstone",
+      "uid": "taskapp-phoenix",
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "refresh": "10s",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Backend Replicas",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+          "targets": [{
+            "expr": "kube_deployment_status_replicas_available{namespace=\"taskapp\",deployment=\"backend\"}",
+            "legendFormat": "available"
+          }]
+        },
+        {
+          "id": 2,
+          "title": "Frontend Replicas",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+          "targets": [{
+            "expr": "kube_deployment_status_replicas_available{namespace=\"taskapp\",deployment=\"frontend\"}",
+            "legendFormat": "available"
+          }]
+        },
+        {
+          "id": 3,
+          "title": "HPA — Backend Desired vs Current",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+          "targets": [
+            {
+              "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"taskapp\",horizontalpodautoscaler=\"backend-hpa\"}",
+              "legendFormat": "current"
+            },
+            {
+              "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"taskapp\",horizontalpodautoscaler=\"backend-hpa\"}",
+              "legendFormat": "desired"
+            },
+            {
+              "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"taskapp\",horizontalpodautoscaler=\"backend-hpa\"}",
+              "legendFormat": "max"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "CPU Usage — taskapp namespace",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+          "targets": [{
+            "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"taskapp\",container!=\"\"}[2m]))",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 5,
+          "title": "Memory Usage — taskapp namespace",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+          "targets": [{
+            "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"taskapp\",container!=\"\"})",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 6,
+          "title": "Ingress Request Rate (req/s)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+          "targets": [{
+            "expr": "sum(rate(nginx_ingress_controller_requests{namespace=\"taskapp\"}[1m])) by (ingress, status)",
+            "legendFormat": "{{ingress}} — {{status}}"
+          }]
+        }
+      ]
+    }

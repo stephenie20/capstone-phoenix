@@ -1,0 +1,10 @@
+---
+# infra/ansible/roles/hardening/defaults/main.yml
+
+deploy_user: ubuntu
+ssh_port: 22
+ufw_allowed_ports:
+  - "22"
+  - "80"
+  - "443"
+fail2ban_enabled: true

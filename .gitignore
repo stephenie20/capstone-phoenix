@@ -1,33 +1,46 @@
-# --- Secrets & state: NEVER commit. The grader runs `git log -p` looking for these. ---
+# ── Terraform state & secrets ─────────────────────────────────────────────────
 *.tfstate
 *.tfstate.*
 .terraform/
+.terraform.lock.hcl
 *.tfvars
 !*.tfvars.example
 crash.log
+override.tf
+override.tf.json
 
-# kubeconfig & cluster joins
+# ── kubeconfig & cluster join material ────────────────────────────────────────
 kubeconfig
 *kubeconfig*
 k3s.yaml
 node-token
 *.token
 
-# secrets / env
+# ── Secrets & env files ───────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
 *secret*.yaml
 !*secret*.example.yaml
+*Secret*.yaml
+!*Secret*.example.yaml
 *.pem
 *.key
 id_rsa*
+id_ed25519
+id_ed25519.pub
 
-# argo / helm local
+# ── Helm local cache ──────────────────────────────────────────────────────────
 charts/*.tgz
+.helmignore
 
-# os / editor
+# ── Argo CD local state ───────────────────────────────────────────────────────
+.argocd/
+
+# ── OS / editor ───────────────────────────────────────────────────────────────
 .DS_Store
 *.swp
 .idea/
 .vscode/
+__pycache__/
+*.pyc

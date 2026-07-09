@@ -1,0 +1,10 @@
+---
+# infra/ansible/roles/k3s-server/defaults/main.yml
+
+k3s_version: "v1.29.4+k3s1"
+
+# Disable k3s's bundled Traefik — we install ingress-nginx ourselves
+k3s_server_extra_args: "--disable traefik --disable servicelb"
+
+k3s_token_path: /var/lib/rancher/k3s/server/node-token
+k3s_config_dir: /etc/rancher/k3s

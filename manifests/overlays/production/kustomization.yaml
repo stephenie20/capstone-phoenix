@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Point at the base layer
+resources:
+  - ../../base
+  - ingress.yaml
+
+# ── Image tags ────────────────────────────────────────────────────────────────
+# UPDATE THESE on every release. Never use :latest.
+# Example: use the git commit SHA or semver tag from your CI pipeline.
+images:
+  - name: ghcr.io/ts-a-devops/taskapp-backend
+    newTag: "v1.0.0"  # backend   <- CI bumps this line automatically
+  - name: ghcr.io/ts-a-devops/taskapp-frontend
+    newTag: "v1.0.0"  # frontend  <- CI bumps this line automatically
+  - name: postgres
+    newTag: "16.3"     # pin postgres too
+
+# ── Common labels ─────────────────────────────────────────────────────────────
+commonLabels:
+  environment: production
+
+# ── Patches ───────────────────────────────────────────────────────────────────
+patches:
+  # Ensure 2 replicas minimum on frontend and backend in production
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: frontend
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: backend

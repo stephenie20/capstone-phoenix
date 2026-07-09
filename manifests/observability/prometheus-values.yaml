@@ -1,0 +1,69 @@
+# manifests/observability/prometheus-values.yaml
+# Tuned for a small 3-node k3s cluster (t3.small nodes)
+
+grafana:
+  enabled: true
+  adminPassword: "changeme-in-production"   # set via --set on install for real deploys
+
+  # Sidecar picks up ConfigMaps labelled grafana_dashboard: "1"
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+prometheus:
+  prometheusSpec:
+    # Scrape all namespaces
+    podMonitorNamespaceSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    ruleNamespaceSelector: {}
+
+    retention: 7d
+    retentionSize: 2GB
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+
+alertmanager:
+  enabled: false   # not needed for capstone
+
+# Reduce resource footprint on small nodes
+nodeExporter:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+kubeStateMetrics:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

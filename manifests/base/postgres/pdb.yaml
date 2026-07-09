@@ -1,0 +1,11 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgres-pdb
+  namespace: taskapp
+spec:
+  maxUnavailable: 0   # never evict postgres during a node drain
+  selector:
+    matchLabels:
+      app: postgres
