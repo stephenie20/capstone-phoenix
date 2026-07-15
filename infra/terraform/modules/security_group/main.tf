@@ -38,11 +38,11 @@ resource "aws_security_group" "nodes" {
   # ── Inbound: intra-cluster only (NOT open to 0.0.0.0/0) ──────────────────
 
   ingress {
-    description = "k3s API server - cluster-internal only"
+    description = "k3s API server - your IP only"
     from_port   = 6443
     to_port     = 6443
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
+    cidr_blocks = [var.allowed_ssh_cidr]
   }
 
   ingress {

@@ -62,6 +62,13 @@
     proto: tcp
   loop: "{{ ufw_allowed_ports }}"
 
+- name: Allow Kubernetes API from trusted admin IP
+  community.general.ufw:
+    rule: allow
+    src: "{{ allowed_k3s_api_cidr }}"
+    port: "6443"
+    proto: tcp
+
 - name: Allow intra-cluster ports (k3s API, flannel, kubelet)
   community.general.ufw:
     rule: allow

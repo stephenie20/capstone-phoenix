@@ -34,10 +34,9 @@
         dest: "{{ playbook_dir }}/../../../kubeconfig"
         flat: true
 
-    - name: Rewrite server address to public IP
-      ansible.builtin.replace:
-        path: "{{ playbook_dir }}/../../../kubeconfig"
-        regexp: 'https://127\.0\.0\.1:6443'
-        replace: "https://{{ ansible_host }}:6443"
+    - name: Rewrite kubeconfig server to public IP
+      ansible.builtin.command: >
+        sed -i '' 's#https://localhost:6443#https://{{ ansible_host }}:6443#g'
+        {{ playbook_dir }}/../../../kubeconfig
       delegate_to: localhost
       become: false
