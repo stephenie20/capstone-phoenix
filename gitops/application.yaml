@@ -10,7 +10,7 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/ts-a-devops/capstone-phoenix   # <- your fork URL
+    repoURL: https://github.com/stephenie20/capstone-phoenix.git   # <- your fork URL
     targetRevision: HEAD
     path: manifests/overlays/production
 
