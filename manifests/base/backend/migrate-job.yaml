@@ -6,8 +6,7 @@ metadata:
   namespace: taskapp
   annotations:
     # Argo CD: re-run this job on every sync when the image tag changes
-    argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   backoffLimit: 3
   ttlSecondsAfterFinished: 600
