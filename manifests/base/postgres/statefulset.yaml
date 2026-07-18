@@ -42,7 +42,6 @@ spec:
               memory: 512Mi
 
           securityContext:
-            allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false   # postgres writes to /var/lib/postgresql
             capabilities:
               drop: ["ALL"]
