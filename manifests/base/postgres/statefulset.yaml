@@ -46,6 +46,10 @@ spec:
             readOnlyRootFilesystem: false   # postgres writes to /var/lib/postgresql
             capabilities:
               drop: ["ALL"]
+              add:
+                - CHOWN
+                - FOWNER
+                - DAC_OVERRIDE
 
           startupProbe:
             exec:
