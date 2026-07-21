@@ -45,7 +45,7 @@ spec:
       containers:
         - name: backend
           # Tag set by kustomize overlay
-          image: ghcr.io/ts-a-devops/taskapp-backend:SEMVER_TAG
+          image: ghcr.io/stephenie20/taskapp-backend:SEMVER_TAG
           ports:
             - containerPort: 5000
 
