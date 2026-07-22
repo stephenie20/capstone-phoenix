@@ -23,17 +23,13 @@ spec:
       labels:
         app: backend
     spec:
-      # Graceful shutdown — gives Flask time to finish in-flight requests
       terminationGracePeriodSeconds: 30
-
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
-
-      # Spread replicas across different worker nodes
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
@@ -41,20 +37,11 @@ spec:
           labelSelector:
             matchLabels:
               app: backend
-
       containers:
         - name: backend
-          volumeMounts:
-            - name: tmp
-              mountPath: /tmp
-      volumes:
-        - name: tmp
-          emptyDir: {}
-          # Tag set by kustomize overlay
-          image: ghcr.io/ts-a-devops/taskapp-backend:5d6b8fc
+          image: ghcr.io/ts-a-devops/taskapp-backend:5d6b8fc  # Tag set by kustomize overlay
           ports:
             - containerPort: 5000
-
           envFrom:
             - configMapRef:
                 name: postgres-config
@@ -90,7 +77,6 @@ spec:
                 secretKeyRef:
                   name: postgres-secret
                   key: POSTGRES_PASSWORD
-
           resources:
             requests:
               cpu: 100m
@@ -98,22 +84,20 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
-
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-
-          # Startup probe — gives the Flask app up to 60s to initialise
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           startupProbe:
             httpGet:
               path: /api/health
               port: 5000
             failureThreshold: 12
             periodSeconds: 5
-
-          # Readiness — remove from Service endpoints if unhealthy
           readinessProbe:
             httpGet:
               path: /api/health
@@ -121,8 +105,6 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
-          # Liveness — restart the container if it deadlocks
           livenessProbe:
             httpGet:
               path: /api/health
@@ -130,9 +112,10 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 20
             failureThreshold: 3
-
-          # Catch SIGTERM — Flask exits cleanly on interrupt
           lifecycle:
             preStop:
               exec:
                 command: ["sh", "-c", "sleep 5"]
+      volumes:
+        - name: tmp
+          emptyDir: {}
