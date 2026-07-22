@@ -42,7 +42,25 @@ spec:
 
       containers:
         - name: frontend
-          image: ghcr.io/ts-a-devops/taskapp-frontend:SEMVER_TAG
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+        - name: nginx-conf
+          emptyDir: {}
+          image: ghcr.io/ts-a-devops/taskapp-frontend:26da2b0 
           ports:
             - containerPort: 8080   # nginx non-root port
 

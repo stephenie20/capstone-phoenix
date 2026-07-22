@@ -44,6 +44,12 @@ spec:
 
       containers:
         - name: backend
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
           # Tag set by kustomize overlay
           image: ghcr.io/ts-a-devops/taskapp-backend:5d6b8fc
           ports:
