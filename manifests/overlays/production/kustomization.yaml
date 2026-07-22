@@ -10,8 +10,8 @@ resources:
 # UPDATE THESE on every release. Never use :latest.
 # Example: use the git commit SHA or semver tag from your CI pipeline.
 images:
-  - name: ghcr.io/stephenie20/taskapp-backend
-    newTag: "2f721f4"  # backend   <- CI bumps this line automatically
+  - name: ghcr.io/ts-a-devops/taskapp-backend
+    newTag: "5d6b8fc"  # backend   <- CI bumps this line automatically
   - name: ghcr.io/ts-a-devops/taskapp-frontend
     newTag: "26da2b0"  # frontend  <- CI bumps this line automatically
   - name: postgres
