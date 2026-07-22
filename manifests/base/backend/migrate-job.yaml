@@ -61,7 +61,7 @@ spec:
       containers:
         - name: migrate
           # Image tag set by kustomize overlay — never :latest
-          image: ghcr.io/ts-a-devops/taskapp-backend:SEMVER_TAG
+          image: ghcr.io/ts-a-devops/taskapp-backend:5d6b8fc
           command: ["alembic", "upgrade", "head"]
 
           envFrom:

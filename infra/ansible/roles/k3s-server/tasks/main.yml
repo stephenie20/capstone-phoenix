@@ -1,71 +1,44 @@
 ---
-# infra/ansible/roles/k3s-server/tasks/main.yml
-
-- name: Create k3s config directory
-  ansible.builtin.file:
-    path: "{{ k3s_config_dir }}"
-    state: directory
-    mode: "0755"
-
-- name: Write k3s server config
-  ansible.builtin.copy:
-    dest: "{{ k3s_config_dir }}/config.yaml"
-    mode: "0600"
-    content: |
-      write-kubeconfig-mode: "0644"
-      disable:
-        - traefik
-        - servicelb
-      tls-san:
-        - "{{ ansible_host }}"
-        - "{{ ansible_default_ipv4.address }}"
-
 - name: Check if k3s is already installed
-  ansible.builtin.stat:
+  stat:
     path: /usr/local/bin/k3s
-  register: k3s_binary
+  register: k3s_installed
 
-- name: Download and install k3s
-  ansible.builtin.shell: |
-    curl -sfL https://get.k3s.io | \
-      INSTALL_K3S_VERSION="{{ k3s_version }}" \
-      sh -s - server {{ k3s_server_extra_args }}
-  args:
-    creates: /usr/local/bin/k3s
-  when: not k3s_binary.stat.exists
-  notify: restart k3s
+- name: Install k3s server
+  shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.29.4+k3s1" sh -
+  when: not k3s_installed.stat.exists
 
-- name: Ensure k3s service is enabled and started
-  ansible.builtin.systemd:
-    name: k3s
-    enabled: true
-    state: started
-
-- name: Wait for k3s API server to be ready
-  ansible.builtin.wait_for:
-    host: "{{ ansible_default_ipv4.address }}"
-    port: 6443
-    timeout: 120
-
-- name: Wait for node-token to be generated
-  ansible.builtin.wait_for:
-    path: "{{ k3s_token_path }}"
+- name: Wait for node-token to exist
+  wait_for:
+    path: /var/lib/rancher/k3s/server/node-token
     timeout: 60
 
 - name: Read node token
-  ansible.builtin.slurp:
-    src: "{{ k3s_token_path }}"
-  register: k3s_token_raw
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: node_token_raw
 
-- name: Set node token fact (shared with workers via hostvars)
-  ansible.builtin.set_fact:
-    k3s_node_token: "{{ k3s_token_raw.content | b64decode | trim }}"
+- name: Set node token fact
+  set_fact:
+    k3s_node_token: "{{ node_token_raw.content | b64decode | trim }}"
 
-- name: Verify control plane is Ready
-  ansible.builtin.command: k3s kubectl get nodes
-  register: nodes_output
-  changed_when: false
+- name: Share token with workers
+  add_host:
+    name: "k3s_token_holder"
+    k3s_token: "{{ k3s_node_token }}"
+    control_plane_private_ip: "{{ ansible_host }}"
 
-- name: Show node status
-  ansible.builtin.debug:
-    msg: "{{ nodes_output.stdout_lines }}"
+- name: Fetch kubeconfig to local machine
+  fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: ./kubeconfig
+    flat: true
+
+- name: Rewrite server address in local kubeconfig
+  delegate_to: localhost
+  become: false
+  replace:
+    path: ./kubeconfig
+    regexp: 'https://127.0.0.1:6443'
+    replace: "https://{{ ansible_host }}:6443"

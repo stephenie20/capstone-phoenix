@@ -1,42 +1,18 @@
 ---
-# site.yml — run this once; idempotent on re-runs
-# Usage:
-#   ansible-playbook -i inventory/hosts.ini site.yml
-
-- name: Base hardening — all nodes
+- name: Harden all nodes
   hosts: k3s_cluster
   become: true
-  gather_facts: true
   roles:
     - hardening
 
-- name: Install k3s control plane
+- name: Install k3s server on control-plane
   hosts: control_plane
   become: true
-  gather_facts: true
   roles:
     - k3s-server
 
-- name: Join workers to cluster
+- name: Join workers to the cluster
   hosts: workers
   become: true
-  gather_facts: true
   roles:
     - k3s-agent
-
-- name: Fetch kubeconfig to local machine
-  hosts: control_plane
-  gather_facts: false
-  tasks:
-    - name: Fetch kubeconfig
-      ansible.builtin.fetch:
-        src: /etc/rancher/k3s/k3s.yaml
-        dest: "{{ playbook_dir }}/../../../kubeconfig"
-        flat: true
-
-    - name: Rewrite kubeconfig server to public IP
-      ansible.builtin.command: >
-        sed -i '' 's#https://localhost:6443#https://{{ ansible_host }}:6443#g'
-        {{ playbook_dir }}/../../../kubeconfig
-      delegate_to: localhost
-      become: false

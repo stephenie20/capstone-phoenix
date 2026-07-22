@@ -1,43 +1,16 @@
 ---
-# infra/ansible/roles/k3s-agent/tasks/main.yml
-#
-# Relies on k3s_node_token set as a fact on the control_plane host.
-# Ansible hostvars makes it available here without any separate variable passing.
-
-- name: Resolve control plane private IP
-  ansible.builtin.set_fact:
-    k3s_server_url: "https://{{ hostvars[groups['control_plane'][0]]['ansible_default_ipv4']['address'] }}:6443"
-    k3s_node_token: "{{ hostvars[groups['control_plane'][0]]['k3s_node_token'] }}"
-
 - name: Check if k3s agent is already installed
-  ansible.builtin.stat:
+  stat:
     path: /usr/local/bin/k3s
-  register: k3s_binary
+  register: k3s_installed
 
-- name: Download and install k3s agent
-  ansible.builtin.shell: |
-    curl -sfL https://get.k3s.io | \
-      INSTALL_K3S_VERSION="{{ k3s_version }}" \
-      K3S_URL="{{ k3s_server_url }}" \
-      K3S_TOKEN="{{ k3s_node_token }}" \
-      sh -s - agent {{ k3s_agent_extra_args }}
-  args:
-    creates: /etc/systemd/system/k3s-agent.service
-  when: not k3s_binary.stat.exists
-  no_log: true   # don't print the token to console
+- name: Install k3s agent and join cluster
+  shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.29.4+k3s1" K3S_URL=https://10.0.1.216:6443 K3S_TOKEN={{ hostvars['k3s_token_holder']['k3s_token'] }} sh -s - agent
+  when: not k3s_installed.stat.exists
 
-- name: Ensure k3s-agent service is enabled and started
-  ansible.builtin.systemd:
+- name: Ensure k3s-agent service is running
+  service:
     name: k3s-agent
-    enabled: true
     state: started
-
-- name: Wait for agent to appear in cluster
-  ansible.builtin.command: >
-    k3s kubectl get node {{ ansible_hostname }} --no-headers
-  delegate_to: "{{ groups['control_plane'][0] }}"
-  register: node_status
-  until: "'Ready' in node_status.stdout"
-  retries: 20
-  delay: 10
-  changed_when: false
+    enabled: true

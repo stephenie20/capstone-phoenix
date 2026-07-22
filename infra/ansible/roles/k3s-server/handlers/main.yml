@@ -1,7 +1,0 @@
----
-# infra/ansible/roles/k3s-server/handlers/main.yml
-
-- name: restart k3s
-  ansible.builtin.systemd:
-    name: k3s
-    state: restarted
