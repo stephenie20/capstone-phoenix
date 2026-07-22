@@ -61,15 +61,18 @@ spec:
       containers:
         - name: migrate
           # Image tag set by kustomize overlay — never :latest
-          image: ghcr.io/stephenie20/taskapp-backend:SEMVER_TAG
+          image: ghcr.io/ts-a-devops/taskapp-backend:SEMVER_TAG
           command: ["alembic", "upgrade", "head"]
 
           envFrom:
             - configMapRef:
                 name: postgres-config
+            - configMapRef:
+                name: backend-config
             - secretRef:
                 name: postgres-secret
-
+            - secretRef:
+                name: backend-secret
           resources:
             requests:
               cpu: 100m
