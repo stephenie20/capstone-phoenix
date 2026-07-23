@@ -23,7 +23,7 @@ spec:
       terminationGracePeriodSeconds: 30
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101      # nginx non-root user
+        runAsUser: 101 # nginx non-root user
         fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
@@ -38,7 +38,7 @@ spec:
         - name: frontend
           image: ghcr.io/ts-a-devops/taskapp-frontend:26da2b0
           ports:
-            - containerPort: 8080   # nginx non-root port
+            - containerPort: 8080 # nginx non-root port
           envFrom:
             - configMapRef:
                 name: frontend-config
@@ -53,8 +53,8 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
-              drop: ["ALL"]
-          # nginx needs a writable /tmp, /var/cache/nginx, /var/run, /etc/nginx/conf.d
+              drop:
+                - ALL
           volumeMounts:
             - name: tmp
               mountPath: /tmp
@@ -62,6 +62,8 @@ spec:
               mountPath: /var/cache/nginx
             - name: nginx-run
               mountPath: /var/run
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
           startupProbe:
             httpGet:
               path: /healthz
@@ -85,11 +87,16 @@ spec:
           lifecycle:
             preStop:
               exec:
-                command: ["sh", "-c", "sleep 5"]
+                command:
+                  - sh
+                  - -c
+                  - sleep 5
       volumes:
         - name: tmp
           emptyDir: {}
         - name: nginx-cache
           emptyDir: {}
         - name: nginx-run
+          emptyDir: {}
+        - name: nginx-conf
           emptyDir: {}
