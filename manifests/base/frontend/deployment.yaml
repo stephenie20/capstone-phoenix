@@ -5,28 +5,34 @@ metadata:
   namespace: taskapp
   labels:
     app: frontend
+
 spec:
   replicas: 2
   selector:
     matchLabels:
       app: frontend
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 0
       maxSurge: 1
+
   template:
     metadata:
       labels:
         app: frontend
+
     spec:
       terminationGracePeriodSeconds: 30
+
       securityContext:
         runAsNonRoot: true
         runAsUser: 101 # nginx non-root user
         fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
+
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
@@ -34,14 +40,18 @@ spec:
           labelSelector:
             matchLabels:
               app: frontend
+
       containers:
         - name: frontend
           image: ghcr.io/ts-a-devops/taskapp-frontend:26da2b0
+
           ports:
             - containerPort: 8080 # nginx non-root port
+
           envFrom:
             - configMapRef:
                 name: frontend-config
+
           resources:
             requests:
               cpu: 50m
@@ -49,12 +59,15 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
+
+          # nginx needs writable directories & template mounts
           volumeMounts:
             - name: tmp
               mountPath: /tmp
@@ -64,12 +77,17 @@ spec:
               mountPath: /var/run
             - name: nginx-conf
               mountPath: /etc/nginx/conf.d
+            - name: nginx-template
+              mountPath: /etc/nginx/templates/default.conf.template
+              subPath: default.conf.template
+
           startupProbe:
             httpGet:
               path: /healthz
               port: 8080
             failureThreshold: 12
             periodSeconds: 5
+
           readinessProbe:
             httpGet:
               path: /healthz
@@ -77,6 +95,7 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 3
+
           livenessProbe:
             httpGet:
               path: /healthz
@@ -84,6 +103,7 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 20
             failureThreshold: 3
+
           lifecycle:
             preStop:
               exec:
@@ -91,12 +111,23 @@ spec:
                   - sh
                   - -c
                   - sleep 5
+
       volumes:
         - name: tmp
           emptyDir: {}
+
         - name: nginx-cache
           emptyDir: {}
+
         - name: nginx-run
           emptyDir: {}
+
         - name: nginx-conf
           emptyDir: {}
+
+        - name: nginx-template
+          configMap:
+            name: frontend-config
+            items:
+              - key: default.conf.template
+                path: default.conf.template
