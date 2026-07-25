@@ -31,7 +31,7 @@ spec:
             - sh
             - -c
             - |
-              until pg_isready -h postgres-svc -U $POSTGRES_USER -d $POSTGRES_DB; do
+              until pg_isready -h postgres -U $POSTGRES_USER -d $POSTGRES_DB; do
                 echo "waiting for postgres..."; sleep 3
               done
           env:
