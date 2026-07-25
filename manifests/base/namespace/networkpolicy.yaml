@@ -116,6 +116,10 @@ spec:
         - podSelector:
             matchLabels:
               app: taskapp-migrate
+    - from:
+        - podSelector:
+            matchLabels:
+              app: postgres-backup
   egress: []    # postgres doesn't need to initiate outbound connections
 
 ---
@@ -129,6 +133,29 @@ spec:
   podSelector:
     matchLabels:
       app: taskapp-migrate
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - port: 5432
+
+---
+# 7. Postgres backup CronJob: egress to postgres only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-backup-netpol
+  namespace: taskapp
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres-backup
   policyTypes:
     - Ingress
     - Egress
