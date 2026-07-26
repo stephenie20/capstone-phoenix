@@ -4,6 +4,7 @@
 **API:** https://api.stephenie.name.ng  
 **Stack:** React/nginx frontend · Flask/Postgres backend · k3s cluster · Argo CD GitOps  
 **Cloud:** AWS (eu-west-1) · 3 nodes (1 control plane + 2 workers)
+<img width="1470" height="956" alt="live-url" src="https://github.com/user-attachments/assets/be38d93a-4cc2-4434-9d88-eff128174523" />
 
 ---
 
