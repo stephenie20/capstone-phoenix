@@ -65,17 +65,31 @@ spec:
           command: ["alembic", "upgrade", "head"]
 
           env:
-            - name: DB_HOST
-              value: "postgres"
-            - name: POSTGRES_HOST
-              value: "postgres"
-            - name: DB_PORT
-              value: "5432"
-            - name: POSTGRES_PORT
-              value: "5432"
-            # Explicit fallback URL for SQLAlchemy/Alembic
-            - name: DATABASE_URL
-              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)"
+            - name: DATABASE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: POSTGRES_HOST
+            - name: DATABASE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: POSTGRES_PORT
+            - name: DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: POSTGRES_DB
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
 
           envFrom:
             - configMapRef:
