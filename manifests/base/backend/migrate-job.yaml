@@ -5,11 +5,15 @@ metadata:
   name: taskapp-migrate
   namespace: taskapp
   annotations:
-    # Argo CD: re-run this job on every sync when the image tag changes
-    argocd.argoproj.io/sync-wave: "2"
+    # Run this Job as a PreSync hook: Argo CD creates it before syncing the
+    # rest of the app, waits for it to complete, and — because it's a hook
+    # rather than a normally-tracked resource — does NOT expect it to
+    # persist afterward. hook-delete-policy cleans it up as soon as it
+    # succeeds, so there's no TTL race and no "Missing"/OutOfSync flapping.
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   backoffLimit: 3
-  ttlSecondsAfterFinished: 600
   template:
     metadata:
       labels:
@@ -45,7 +49,6 @@ spec:
                 configMapKeyRef:
                   name: postgres-config
                   key: POSTGRES_DB
-
           resources:
             requests:
               cpu: 50m
@@ -64,6 +67,10 @@ spec:
           image: ghcr.io/ts-a-devops/taskapp-backend:5d6b8fc
           command: ["alembic", "upgrade", "head"]
 
+          # These names must match exactly what migrations/env.py's
+          # get_database_url() reads via os.getenv(...) — DATABASE_HOST,
+          # DATABASE_PORT, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD.
+          # (Confirmed working: same pattern used in backend/deployment.yaml.)
           env:
             - name: DATABASE_HOST
               valueFrom:
@@ -100,6 +107,7 @@ spec:
                 name: postgres-secret
             - secretRef:
                 name: backend-secret
+
           resources:
             requests:
               cpu: 100m
