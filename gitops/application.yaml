@@ -30,6 +30,16 @@ spec:
   # Tell Argo to ignore secrets created out-of-band (postgres-secret, backend-secret)
   # so it doesn't try to prune them (they're not in git)
   ignoreDifferences:
+    # backend-hpa actively manages replicas at runtime based on load; the
+    # static `replicas: 2` in git is only a starting point. Without this,
+    # Argo CD flags the Deployment OutOfSync any time the HPA scales it
+    # away from the git-declared value.
+    - group: apps
+      kind: Deployment
+      name: backend
+      namespace: taskapp
+      jsonPointers:
+        - /spec/replicas
     - group: ""
       kind: Secret
       name: postgres-secret
