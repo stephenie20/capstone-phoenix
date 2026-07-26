@@ -64,6 +64,19 @@ spec:
           image: ghcr.io/ts-a-devops/taskapp-backend:5d6b8fc
           command: ["alembic", "upgrade", "head"]
 
+          env:
+            - name: DB_HOST
+              value: "postgres"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_PORT
+              value: "5432"
+            # Explicit fallback URL for SQLAlchemy/Alembic
+            - name: DATABASE_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)"
+
           envFrom:
             - configMapRef:
                 name: postgres-config
